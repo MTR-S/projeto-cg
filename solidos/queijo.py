@@ -41,18 +41,18 @@ def criar_queijo(
         [ x2,  hy,  z2],  # 5
     ], dtype=np.float64)
 
-    # Faces triangulares orientadas para fora (CCW)
+    # Faces triangulares orientadas para fora (CCW vista de fora)
     faces = np.array([
-        # Base inferior (aponta para baixo, y = -hy)
-        [0, 2, 1],
-        # Base superior (aponta para cima, y = +hy)
-        [3, 4, 5],
-        # Lateral reta 1 (eixo X, entre 0 e 1 / 3 e 4)
-        [0, 1, 4], [0, 4, 3],
-        # Lateral reta 2 (eixo inclinado, entre 0 e 2 / 3 e 5)
-        [0, 3, 5], [0, 5, 2],
-        # Face externa (arco aproximado por plano, entre 1 e 2 / 4 e 5)
-        [1, 2, 5], [1, 5, 4],
+        # Base inferior (aponta para baixo, normal -y)
+        [0, 1, 2],
+        # Base superior (aponta para cima, normal +y)
+        [3, 5, 4],
+        # Lateral reta 1 (no plano z=0, normal -z)
+        [0, 4, 1], [0, 3, 4],
+        # Lateral reta 2 (plano inclinado pelo ângulo theta)
+        [0, 2, 5], [0, 5, 3],
+        # Face curva/externa (arco frontal)
+        [1, 5, 2], [1, 4, 5],
     ], dtype=np.int32)
 
     # Arestas únicas
@@ -82,9 +82,13 @@ def criar_queijo(
 
 
 if __name__ == "__main__":
+    from visualizacao import validar_solido, plotar_solido
+    
+    # 1. Cria o sólido
     queijo = criar_queijo()
-    print(f"Queijo criado com sucesso!")
-    print(f" - Vértices: {len(queijo['vertices'])}")
-    print(f" - Faces: {len(queijo['faces'])}")
-    print(f" - Arestas: {len(queijo['arestas'])}")
-    print(f" - Normais: {queijo['normais_faces'].shape}")
+    
+    # 2. Executa a bateria de testes matemáticos
+    relatorio = validar_solido(queijo)
+    
+    # 3. Exibe o plot 3D interativo no sistema do objeto (Item 1e)
+    plotar_solido(queijo, mostrar_normais=True, escala_normais=0.6, salvar_caminho="outputs/fig_1_queijo.png")

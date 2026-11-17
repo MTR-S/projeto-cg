@@ -80,9 +80,13 @@ def criar_esponja(
 
 
 if __name__ == "__main__":
+    from visualizacao import validar_solido, plotar_solido
+    
+    # 1. Cria o sólido
     esponja = criar_esponja()
-    print(f"Esponja criada com sucesso!")
-    print(f" - Vértices: {len(esponja['vertices'])}")
-    print(f" - Faces: {len(esponja['faces'])}")
-    print(f" - Arestas: {len(esponja['arestas'])}")
-    print(f" - Normais: {esponja['normais_faces'].shape}")
+    
+    # 2. Executa a bateria de testes matemáticos
+    relatorio = validar_solido(esponja)
+    
+    # 3. Exibe o plot 3D interativo no sistema do objeto (Item 1e)
+    plotar_solido(esponja, mostrar_normais=True, escala_normais=0.6, salvar_caminho="outputs/fig_1_esponja.png")

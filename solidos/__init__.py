@@ -17,6 +17,7 @@ from .queijo import criar_queijo
 from .prato import criar_prato
 from .boia import criar_boia
 from .rolo import criar_rolo
+from .visualizacao import validar_solido, plotar_solido
 
 __all__ = [
     "criar_esponja",
@@ -24,4 +25,6 @@ __all__ = [
     "criar_prato",
     "criar_boia",
     "criar_rolo",
+    "validar_solido",
+    "plotar_solido",
 ]
