@@ -43,32 +43,32 @@ def montar_cena() -> list[dict]:
     
     Regras satisfeitas:
     1. Máximo valor absoluto de qualquer componente <= 10 (|x|, |y|, |z| <= 10).
-    2. Objetos distribuídos sem sobreposição ou intersecção física.
+    2. Objetos distribuídos sem sobreposição ou intersecção física (validação AABB).
     3. Cada sólido recebe uma cor distinta.
     """
-    # 1. Esponja (amarela/esverdeada)
+    # 1. Esponja (amarela/esverdeada) - quadrante superior esquerdo
     esponja = criar_esponja(largura=2.6, altura=1.0, profundidade=1.8, cor=(0.85, 0.85, 0.15))
-    m_esponja = translacao(-6.0, -2.0, -2.0) @ rotacao_y(np.radians(20))
+    m_esponja = translacao(-6.0, 5.0, -2.0) @ rotacao_y(np.radians(20))
     esponja_mundo = transformar_solido(esponja, m_esponja)
 
-    # 2. Fatia de queijo (alaranjado)
+    # 2. Fatia de queijo (alaranjado) - quadrante inferior esquerdo
     queijo = criar_queijo(raio=2.2, angulo_graus=50.0, altura=1.0, cor=(1.0, 0.65, 0.0))
-    m_queijo = translacao(-3.0, 3.0, 3.0) @ rotacao_y(np.radians(45)) @ rotacao_x(np.radians(-15))
+    m_queijo = translacao(-6.0, -4.0, 2.0) @ rotacao_y(np.radians(45))
     queijo_mundo = transformar_solido(queijo, m_queijo)
 
-    # 3. Prato (cinza claro / branco cerâmica)
+    # 3. Prato (cinza claro / cerâmica) - centro inferior
     prato = criar_prato(raio_base=1.2, raio_borda=2.4, altura=0.6, num_fatias=24, cor=(0.95, 0.95, 0.98))
     m_prato = translacao(0.0, -4.0, 0.0)
     prato_mundo = transformar_solido(prato, m_prato)
 
-    # 4. Rolo de massa (madeira clara)
+    # 4. Rolo de massa (madeira clara) - centro superior
     rolo = criar_rolo(raio_rolo=0.7, comp_rolo=2.8, raio_haste=0.25, comp_haste=0.8, cor=(0.76, 0.58, 0.40))
-    m_rolo = translacao(5.0, 3.5, -2.0) @ rotacao_z(np.radians(25)) @ rotacao_y(np.radians(30))
+    m_rolo = translacao(0.0, 5.0, 0.0) @ rotacao_z(np.radians(15))
     rolo_mundo = transformar_solido(rolo, m_rolo)
 
-    # 5. Boia de piscina (azul ciano)
+    # 5. Boia de piscina (azul ciano) - lado direito
     boia = criar_boia(R=1.8, r=0.6, n_u=20, n_v=14, cor=(0.1, 0.7, 0.9))
-    m_boia = translacao(4.5, -2.5, 3.0) @ rotacao_x(np.radians(70))
+    m_boia = translacao(6.0, 0.0, 0.0) @ rotacao_x(np.radians(70))
     boia_mundo = transformar_solido(boia, m_boia)
 
     cena = [esponja_mundo, queijo_mundo, prato_mundo, rolo_mundo, boia_mundo]
