@@ -52,6 +52,11 @@ def projetar(
         pontos_2d: np.ndarray (N, 2) de coordenadas projetadas na janela 2D
         faces_visiveis: np.ndarray com as faces que passaram pelo culling e estão no frustum
     """
+    if near <= 0.0:
+        raise ValueError(f"O plano near deve ser positivo (> 0), recebido: {near}.")
+    if far <= near:
+        raise ValueError(f"O plano far deve ser maior que near ({near}), recebido: {far}.")
+
     vertices = solido_cam["vertices"]
     faces = solido_cam["faces"]
 
@@ -62,12 +67,21 @@ def projetar(
     # 2. Descarte por near/far plane (z_cam deve estar entre -far e -near)
     # Para o sistema onde a câmera olha para -Z:
     z = vertices[:, 2]
+    z_faces = z[faces_visiveis]
+    mascara_frustum = np.all((z_faces <= -near) & (z_faces >= -far), axis=1)
+    faces_visiveis = faces_visiveis[mascara_frustum]
+
     # Evitar divisão por zero ou projeção de pontos atrás da câmera
     z_neg = np.where(z < -1e-5, -z, np.nan)
 
     xp = (d * vertices[:, 0]) / z_neg
     yp = (d * vertices[:, 1]) / z_neg
     pontos_2d = np.column_stack([xp, yp])
+
+    # Segurança adicional: garantir que nenhuma face referencie vértice não-finito
+    vertices_finitos = np.all(np.isfinite(pontos_2d), axis=1)
+    mascara_finita = np.all(vertices_finitos[faces_visiveis], axis=1)
+    faces_visiveis = faces_visiveis[mascara_finita]
 
     return pontos_2d, faces_visiveis
 
