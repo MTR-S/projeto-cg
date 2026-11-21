@@ -55,8 +55,8 @@ def criar_boia(
             p01 = i * n_v + next_j
 
             # 2 triângulos com orientação externa (CCW)
-            faces_list.append([p00, p10, p11])
-            faces_list.append([p00, p11, p01])
+            faces_list.append([p00, p11, p10])
+            faces_list.append([p00, p01, p11])
 
     faces = np.array(faces_list, dtype=np.int32)
 

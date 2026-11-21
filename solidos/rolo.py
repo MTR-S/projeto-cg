@@ -94,8 +94,8 @@ def criar_rolo(
         next_i = (i + 1) % fatias
         a1_1, a1_2 = anel_idx(1) + i, anel_idx(1) + next_i
         a2_1, a2_2 = anel_idx(2) + i, anel_idx(2) + next_i
-        faces_list.append([a1_1, a2_1, a2_2])
-        faces_list.append([a1_1, a2_2, a1_2])
+        faces_list.append([a1_1, a2_2, a2_1])
+        faces_list.append([a1_1, a1_2, a2_2])
 
     # Corpo principal: ligando anel 2 ao anel 3
     for i in range(fatias):

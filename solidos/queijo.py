@@ -44,15 +44,15 @@ def criar_queijo(
     # Faces triangulares orientadas para fora (CCW)
     faces = np.array([
         # Base inferior (aponta para baixo, y = -hy)
-        [0, 2, 1],
+        [0, 1, 2],
         # Base superior (aponta para cima, y = +hy)
-        [3, 4, 5],
+        [3, 5, 4],
         # Lateral reta 1 (eixo X, entre 0 e 1 / 3 e 4)
-        [0, 1, 4], [0, 4, 3],
+        [0, 4, 1], [0, 3, 4],
         # Lateral reta 2 (eixo inclinado, entre 0 e 2 / 3 e 5)
-        [0, 3, 5], [0, 5, 2],
+        [0, 5, 3], [0, 2, 5],
         # Face externa (arco aproximado por plano, entre 1 e 2 / 4 e 5)
-        [1, 2, 5], [1, 5, 4],
+        [1, 5, 2], [1, 4, 5],
     ], dtype=np.int32)
 
     # Arestas únicas
