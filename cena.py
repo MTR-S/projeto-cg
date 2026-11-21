@@ -48,7 +48,7 @@ def montar_cena() -> list[dict]:
     """
     # 1. Esponja (amarela/esverdeada) - quadrante superior esquerdo
     esponja = criar_esponja(largura=2.6, altura=1.0, profundidade=1.8, cor=(0.85, 0.85, 0.15))
-    m_esponja = translacao(-6.0, 5.0, -2.0) @ rotacao_y(np.radians(20))
+    m_esponja = translacao(-6.0, 5.0, -2.0) @ rotacao_y(np.radians(20)) @ escala(1.15, 1.2, 1.1)
     esponja_mundo = transformar_solido(esponja, m_esponja)
 
     # 2. Fatia de queijo (alaranjado) - quadrante inferior esquerdo
