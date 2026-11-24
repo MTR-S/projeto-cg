@@ -82,9 +82,19 @@ def criar_queijo(
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+
     queijo = criar_queijo()
-    print(f"Queijo criado com sucesso!")
+    print("Queijo criado com sucesso!")
     print(f" - Vértices: {len(queijo['vertices'])}")
     print(f" - Faces: {len(queijo['faces'])}")
     print(f" - Arestas: {len(queijo['arestas'])}")
     print(f" - Normais: {queijo['normais_faces'].shape}")
+
+    if "--no-plot" not in sys.argv:
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_3d import exibir_solido_interativo
+
+        exibir_solido_interativo(queijo)

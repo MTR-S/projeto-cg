@@ -9,10 +9,12 @@ Gera as figuras 3D exigidas para os itens 1e, 2b, 3c, 3d e 3e:
 """
 
 import os
+import sys
 
 import matplotlib
 
-matplotlib.use("Agg")
+if __name__ != "__main__" and "matplotlib.pyplot" not in sys.modules:
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from matplotlib.ticker import MaxNLocator
@@ -91,12 +93,19 @@ def plotar_solido_3d(
     cor = tuple(float(c) for c in solido["cor"])
     cor_borda = _cor_borda_sutil(cor)
 
+    if "cores_faces" in solido:
+        cores_f = [tuple(float(c) for c in cf) for cf in solido["cores_faces"]]
+        bordas_f = [_cor_borda_sutil(cf) for cf in cores_f]
+    else:
+        cores_f = cor
+        bordas_f = cor_borda
+
     triangulos = vertices[faces]
     colecao = Poly3DCollection(
         triangulos,
-        facecolor=cor,
-        edgecolor=cor_borda,
-        linewidth=0.35,
+        facecolor=cores_f,
+        edgecolor=bordas_f,
+        linewidth=0.45,
         alpha=alpha,
     )
     ax.add_collection3d(colecao)
@@ -119,9 +128,9 @@ def plotar_solido_3d(
             n_amostra[:, 2],
             length=0.45,
             normalize=True,
-            color=cor_borda,
-            linewidth=0.9,
-            alpha=0.9,
+            color="#e11d48",
+            linewidth=1.1,
+            alpha=0.95,
         )
 
 
@@ -449,3 +458,64 @@ def gerar_figuras_3d(diretorio_saida: str = "outputs") -> dict[str, str]:
         "fig_3c": plotar_cena_camera(diretorio_saida=diretorio_saida),
         "fig_3e": plotar_variacao_eye(diretorio_saida=diretorio_saida),
     }
+
+
+def exibir_solido_interativo(solido: dict, mostrar_normais: bool = True) -> None:
+    """Abre uma janela 3D interativa para inspecionar um único sólido com o mouse."""
+    fig = plt.figure(figsize=(7, 6))
+    ax = fig.add_subplot(111, projection="3d")
+    plotar_solido_3d(ax, solido, mostrar_normais=mostrar_normais, alpha=0.85)
+    _configurar_limites_cubicos(ax, solido["vertices"], margem=0.6)
+    ax.set_xlabel("X_obj")
+    ax.set_ylabel("Y_obj")
+    ax.set_zlabel("Z_obj")
+    n_vert = len(solido["vertices"])
+    n_faces = len(solido["faces"])
+    ax.set_title(
+        f"{solido['nome'].capitalize()} ({n_vert} vértices, {n_faces} faces)",
+        fontsize=12,
+        fontweight="bold",
+    )
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Visualização 3D interativa dos sólidos e da cena."
+    )
+    parser.add_argument(
+        "alvo",
+        nargs="?",
+        default="todos",
+        choices=["esponja", "queijo", "prato", "rolo", "boia", "todos"],
+        help="Qual sólido abrir na janela 3D interativa (padrão: todos).",
+    )
+    args = parser.parse_args()
+
+    mapa_solidos = {
+        "esponja": criar_esponja,
+        "queijo": criar_queijo,
+        "prato": criar_prato,
+        "rolo": criar_rolo,
+        "boia": criar_boia,
+    }
+
+    if args.alvo in mapa_solidos:
+        exibir_solido_interativo(mapa_solidos[args.alvo]())
+    else:
+        fig = plt.figure(figsize=(15, 9))
+        fig.suptitle("Sólidos Isolados (Interativo 3D)", fontsize=14, fontweight="bold")
+        for idx, fn in enumerate(mapa_solidos.values(), start=1):
+            s = fn()
+            ax = fig.add_subplot(2, 3, idx, projection="3d")
+            plotar_solido_3d(ax, s, mostrar_normais=True, alpha=0.85)
+            _configurar_limites_cubicos(ax, s["vertices"], margem=0.6)
+            ax.set_xlabel("X_obj")
+            ax.set_ylabel("Y_obj")
+            ax.set_zlabel("Z_obj")
+            ax.set_title(f"{s['nome'].capitalize()} ({len(s['vertices'])}V, {len(s['faces'])}F)")
+        plt.tight_layout()
+        plt.show()

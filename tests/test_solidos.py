@@ -46,7 +46,7 @@ class TestSolidosOrientacaoENormais(unittest.TestCase):
             "cor",
             "nome",
         }
-        self.assertEqual(set(solido.keys()), chaves_obrigatorias)
+        self.assertTrue(chaves_obrigatorias.issubset(set(solido.keys())))
         self.assertEqual(solido["nome"], nome_esperado)
         self.assertIsInstance(solido["cor"], tuple)
         self.assertEqual(len(solido["cor"]), 3)

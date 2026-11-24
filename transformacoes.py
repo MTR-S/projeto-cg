@@ -92,7 +92,7 @@ def transformar_solido(solido: dict, matriz: np.ndarray) -> dict:
     normas = np.linalg.norm(normais, axis=1, keepdims=True)
     normais_unitarias = normais / np.where(normas == 0, 1.0, normas)
 
-    return {
+    resultado = {
         "vertices": novos_vertices,
         "faces": faces,
         "arestas": solido["arestas"],
@@ -100,6 +100,9 @@ def transformar_solido(solido: dict, matriz: np.ndarray) -> dict:
         "cor": solido["cor"],
         "nome": solido.get("nome", "solido"),
     }
+    if "cores_faces" in solido:
+        resultado["cores_faces"] = solido["cores_faces"]
+    return resultado
 
 
 if __name__ == "__main__":

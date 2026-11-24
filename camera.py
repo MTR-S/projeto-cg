@@ -79,7 +79,7 @@ def transformar_para_camera(solido: dict, matriz_visao: np.ndarray) -> dict:
     normas = np.linalg.norm(normais_cam, axis=1, keepdims=True)
     normais_unitarias = normais_cam / np.where(normas == 0, 1.0, normas)
 
-    return {
+    resultado = {
         "vertices": novos_vertices,
         "faces": solido["faces"],
         "arestas": solido["arestas"],
@@ -87,6 +87,9 @@ def transformar_para_camera(solido: dict, matriz_visao: np.ndarray) -> dict:
         "cor": solido["cor"],
         "nome": solido.get("nome", "solido"),
     }
+    if "cores_faces" in solido:
+        resultado["cores_faces"] = solido["cores_faces"]
+    return resultado
 
 
 def obter_origem_mundo_na_camera(matriz_visao: np.ndarray) -> np.ndarray:
