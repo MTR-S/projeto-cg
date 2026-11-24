@@ -87,7 +87,7 @@ def phong(
     N = normais_vertices
 
     # 4. Componente ambiente: I_amb = Ka * Ia * cor_base
-    I_amb = ka * ia * cor_base
+    I_amb = np.broadcast_to(ka * ia * cor_base, vertices.shape).copy()
 
     # 5. Componente difusa: I_dif = Kd * Il * max(0, N · L) * cor_base
     n_dot_l = np.sum(N * L, axis=1, keepdims=True)
@@ -109,7 +109,12 @@ def phong(
     I_total = np.clip(I_amb + I_dif + I_esp, 0.0, 1.0)
 
     if retornar_componentes:
-        return I_total, I_amb, I_dif, I_esp
+        return (
+            I_total,
+            np.clip(I_amb, 0.0, 1.0),
+            np.clip(I_dif, 0.0, 1.0),
+            np.clip(I_esp, 0.0, 1.0),
+        )
     return I_total
 
 
