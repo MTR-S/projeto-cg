@@ -21,7 +21,7 @@ from cena import montar_cena
 from camera import camera, transformar_para_camera, obter_origem_mundo_na_camera
 from projecao import projetar, descartar_faces_ocultas
 from iluminacao import phong
-from rasterizacao import mapear_viewport, preencher_par_impar
+from rasterizacao import mapear_viewport, preencher_par_impar, desenhar_arestas_bresenham
 
 
 def render(
@@ -41,6 +41,7 @@ def render(
     """
     largura, altura = resolucao
     buffer_imagem = np.ones((altura, largura, 3), dtype=np.float64) * 0.05  # Fundo escuro
+    z_buffer = np.full((altura, largura), np.inf, dtype=np.float64)
 
     # 1. Obter cena no mundo
     cena_mundo = montar_cena()
@@ -64,13 +65,36 @@ def render(
         cores_vert = phong(solido_mundo, luz_pos=luz_pos, eye_pos=eye)
 
         # Mapeamento para Viewport / Tela
-        pts_tela = mapear_viewport(pts_2d, largura, altura, xmin=-4.0, xmax=4.0, ymin=-4.0, ymax=4.0)
+        # Limites simétricos [-1.0, 1.0] comportam todos os vértices projetados
+        # dos 5 sólidos ([-0.445, 0.773] x [-0.434, 0.586]) com margem e sem cortes.
+        pts_tela = mapear_viewport(
+            pts_2d, largura, altura, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0
+        )
 
-        # Rasterização dos triângulos visíveis
+        # Rasterização dos triângulos visíveis e suas arestas via Bresenham
         for face in faces_vis:
             tri_pts = pts_tela[face]
             tri_cores = cores_vert[face]
-            preencher_par_impar(tri_pts, tri_cores, largura, altura, buffer_imagem)
+            tri_z = -solido_cam["vertices"][face, 2]
+            preencher_par_impar(
+                tri_pts,
+                tri_cores,
+                largura,
+                altura,
+                buffer_imagem,
+                z_vertices=tri_z,
+                z_buffer=z_buffer,
+            )
+            cor_aresta = np.mean(tri_cores, axis=0)
+            desenhar_arestas_bresenham(
+                tri_pts,
+                cor_aresta,
+                largura,
+                altura,
+                buffer_imagem,
+                z_vertices=tri_z,
+                z_buffer=z_buffer,
+            )
 
     if salvar_caminho:
         os.makedirs(os.path.dirname(salvar_caminho), exist_ok=True)
