@@ -12,9 +12,12 @@ Executa o pipeline completo e gera todas as figuras exigidas pelo relatório:
   - Fig 7: Rasterização em 3 resoluções distintas (200x200, 400x400, 800x800) (Item 6)
 """
 
+import argparse
 import os
-import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from cena import montar_cena
@@ -22,6 +25,7 @@ from camera import camera, transformar_para_camera, obter_origem_mundo_na_camera
 from projecao import projetar, descartar_faces_ocultas
 from iluminacao import phong
 from rasterizacao import mapear_viewport, preencher_par_impar, desenhar_arestas_bresenham
+from visualizacao_3d import gerar_figuras_3d
 
 
 def render(
@@ -127,5 +131,31 @@ def demonstracao_pipeline():
     print("\n[4/4] Pipeline inicial 100% operacional!")
 
 
+def gerar_todas_figuras(diretorio_saida: str = "outputs") -> dict[str, str]:
+    """Gera todas as figuras 3D do projeto no diretório especificado."""
+    return gerar_figuras_3d(diretorio_saida=diretorio_saida)
+
+
 if __name__ == "__main__":
-    demonstracao_pipeline()
+    parser = argparse.ArgumentParser(
+        description="Pipeline Principal do Projeto de Computação Gráfica (2026.2 - IFCE)"
+    )
+    parser.add_argument(
+        "--figuras",
+        action="store_true",
+        help="Gera as figuras 3D (itens 1e, 2b, 3c–3e) na pasta de saída.",
+    )
+    parser.add_argument(
+        "--saida",
+        default="outputs",
+        help="Diretório de saída para as figuras geradas (padrão: outputs).",
+    )
+    args = parser.parse_args()
+
+    if args.figuras:
+        caminhos = gerar_todas_figuras(diretorio_saida=args.saida)
+        print("Figuras 3D geradas com sucesso:")
+        for chave, caminho in caminhos.items():
+            print(f" - {chave}: {caminho}")
+    else:
+        demonstracao_pipeline()
