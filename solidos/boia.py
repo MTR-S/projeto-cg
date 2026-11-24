@@ -1,9 +1,41 @@
 """
-Modelagem da Boia de Piscina (Toro Paramétrico).
+Modelagem da Boia de Piscina (Toro).
 Responsável: Vinicius
+
+IDEIA GERAL
+-----------
+Um toro é um círculo pequeno (raio r) girado em torno de um eixo (aqui, o eixo y).
+O centro do círculo pequeno fica a uma distância R desse eixo.
+
+    R = "tamanho" da boia (distância do eixo até o meio do tubo)
+    r = "grossura" da boia (raio do tubo)
+
+Dois ângulos descrevem qualquer ponto da superfície:
+    v : posição ao redor do círculo pequeno (0 a 2π)
+    u : quanto o círculo pequeno foi girado em torno do eixo y (0 a 2π)
+
+PASSO 1. Ponto do círculo pequeno, ainda no plano xy, com centro em (R, 0, 0):
+    P(v) = (R + r·cos v,  r·sin v,  0)
+
+PASSO 2. Gira esse ponto por um ângulo u em torno do eixo y (matriz Ry):
+         [  cos u   0   sin u ]
+    Ry = [    0     1     0   ]
+         [ -sin u   0   cos u ]
+
+    Ry · P(v) = ( (R + r·cos v)·cos u,
+                   r·sin v,
+                  -(R + r·cos v)·sin u )
+
+Essa é a fórmula de cada vértice da boia.
 """
 
 import numpy as np
+
+
+def ponto_do_toro(u: float, v: float, R: float, r: float) -> list[float]:
+    """Aplica a fórmula do toro: ponto do círculo pequeno girado em torno do eixo y."""
+    a = R + r * np.cos(v)          # distância do ponto até o eixo y
+    return [a * np.cos(u), r * np.sin(v), -a * np.sin(u)]
 
 
 def criar_boia(
@@ -14,82 +46,147 @@ def criar_boia(
     cor: tuple[float, float, float] = (0.1, 0.65, 0.95),
 ) -> dict:
     """
-    Cria a malha triangular de uma boia de piscina (toro).
-    
-    Parametrização:
-        x = (R + r * cos(v)) * cos(u)
-        y = r * sin(v)
-        z = (R + r * cos(v)) * sin(u)
-    com u em [0, 2pi) e v em [0, 2pi).
-    
+    Cria a malha de triângulos da boia (toro).
+
+    Parâmetros:
+        R   : distância do eixo y até o centro do tubo
+        r   : raio do tubo (r < R, senão o toro se cruza)
+        n_u : quantas posições do círculo pequeno ao redor do eixo (divisões em u)
+        n_v : quantos pontos em cada círculo pequeno (divisões em v)
+        cor : cor RGB da boia, valores entre 0 e 1
+
     Retorna:
-        dict no formato padrão do projeto.
+        dicionário no formato padrão do projeto.
     """
-    u = np.linspace(0, 2 * np.pi, n_u, endpoint=False)
-    v = np.linspace(0, 2 * np.pi, n_v, endpoint=False)
+    if r >= R:
+        raise ValueError("r precisa ser menor que R, senão o toro se cruza.")
 
-    vertices_list = []
-    # Grid de vértices: linha i (u), coluna j (v)
+    # ------------------------------------------------------------------
+    # 1) VÉRTICES
+    # Amostramos os ângulos SEM repetir o 2π (endpoint=False), porque o
+    # ângulo 2π é o mesmo ponto que 0. O "fechamento" é feito nas faces.
+    # ------------------------------------------------------------------
+    us = np.linspace(0, 2 * np.pi, n_u, endpoint=False)
+    vs = np.linspace(0, 2 * np.pi, n_v, endpoint=False)
+
+    vertices = []
+    for u in us:                 # cada u é um círculo pequeno (um "anel")
+        for v in vs:             # cada v é um ponto desse anel
+            vertices.append(ponto_do_toro(u, v, R, r))
+    vertices = np.array(vertices, dtype=np.float64)
+
+    # O vértice (i, j) da grade, com i para u e j para v, fica na posição:
+    def indice(i: int, j: int) -> int:
+        # O "% n" faz o último anel se ligar ao primeiro (fecha a boia)
+        return (i % n_u) * n_v + (j % n_v)
+
+    # ------------------------------------------------------------------
+    # 2) FACES
+    # A grade (u, v) vira uma colcha de quadradinhos. Cada quadradinho:
+    #
+    #      p01 ---- p11        p00 = (i,   j)
+    #       |     /  |         p10 = (i+1, j)
+    #       |   /    |         p11 = (i+1, j+1)
+    #      p00 ---- p10        p01 = (i,   j+1)
+    #
+    # é cortado na diagonal p00–p11 em 2 triângulos.
+    # A ordem [p00, p10, p11] foi escolhida para a normal sair PARA FORA:
+    # andar em u e depois em v, com a regra da mão direita, aponta para
+    # fora do tubo (conferido no teste do final do arquivo).
+    # ------------------------------------------------------------------
+    faces = []
     for i in range(n_u):
         for j in range(n_v):
-            ui = u[i]
-            vj = v[j]
-            x = (R + r * np.cos(vj)) * np.cos(ui)
-            y = r * np.sin(vj)
-            z = (R + r * np.cos(vj)) * np.sin(ui)
-            vertices_list.append([x, y, z])
+            p00 = indice(i, j)
+            p10 = indice(i + 1, j)
+            p11 = indice(i + 1, j + 1)
+            p01 = indice(i, j + 1)
+            faces.append([p00, p10, p11])
+            faces.append([p00, p11, p01])
+    faces = np.array(faces, dtype=np.int32)
 
-    vertices = np.array(vertices_list, dtype=np.float64)
+    # ------------------------------------------------------------------
+    # 3) ARESTAS (cada lado de triângulo, sem repetir)
+    # Cada aresta aparece em 2 triângulos; ordenar o par (menor, maior)
+    # faz as duas aparições virarem a mesma e o set remove a repetida.
+    # ------------------------------------------------------------------
+    arestas = set()
+    for a, b, c in faces:
+        for e in ((a, b), (b, c), (c, a)):
+            arestas.add(tuple(sorted(e)))
+    arestas = np.array(sorted(arestas), dtype=np.int32)
 
-    # Triangulação da grade toroidal com fechamento em ambas as direções
-    faces_list = []
-    for i in range(n_u):
-        next_i = (i + 1) % n_u
-        for j in range(n_v):
-            next_j = (j + 1) % n_v
-
-            # 4 vértices do quad no grid
-            p00 = i * n_v + j
-            p10 = next_i * n_v + j
-            p11 = next_i * n_v + next_j
-            p01 = i * n_v + next_j
-
-            # 2 triângulos com orientação externa (CCW)
-            faces_list.append([p00, p11, p10])
-            faces_list.append([p00, p01, p11])
-
-    faces = np.array(faces_list, dtype=np.int32)
-
-    # Arestas únicas
-    arestas_set = set()
-    for f in faces:
-        for k in range(3):
-            e = tuple(sorted((f[k], f[(k + 1) % 3])))
-            arestas_set.add(e)
-    arestas = np.array(sorted(list(arestas_set)), dtype=np.int32)
-
-    # Normais das faces
+    # ------------------------------------------------------------------
+    # 4) NORMAIS DAS FACES
+    # n = (v1 - v0) x (v2 - v0), dividido pelo próprio tamanho (unitária).
+    # ------------------------------------------------------------------
     v0 = vertices[faces[:, 0]]
     v1 = vertices[faces[:, 1]]
     v2 = vertices[faces[:, 2]]
     normais = np.cross(v1 - v0, v2 - v0)
-    normas = np.linalg.norm(normais, axis=1, keepdims=True)
-    normais_unitarias = normais / np.where(normas == 0, 1.0, normas)
+    normais /= np.linalg.norm(normais, axis=1, keepdims=True)
 
     return {
         "vertices": vertices,
         "faces": faces,
         "arestas": arestas,
-        "normais_faces": normais_unitarias,
+        "normais_faces": normais,
         "cor": cor,
         "nome": "boia",
     }
 
 
+def verificar_boia(boia: dict, R: float) -> dict:
+    """
+    Testes que provam que a malha está correta (bons para o relatório):
+      - fechada: toda aresta é compartilhada por exatamente 2 triângulos
+      - Euler: V - E + F = 0 para um toro (superfície com um "furo")
+      - normais para fora: a normal de cada face aponta para longe do
+        centro do tubo (o ponto do círculo de raio R mais próximo da face)
+    """
+    V, F, N = boia["vertices"], boia["faces"], boia["normais_faces"]
+    pares = np.sort(np.vstack([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), axis=1)
+    _, contagem = np.unique(pares, axis=0, return_counts=True)
+
+    centroides = V[F].mean(axis=1)
+    # centro do tubo mais próximo: projeta o centróide no plano xz e leva a distância R
+    xz = centroides[:, [0, 2]]
+    xz = xz / np.linalg.norm(xz, axis=1, keepdims=True) * R
+    centro_tubo = np.column_stack([xz[:, 0], np.zeros(len(F)), xz[:, 1]])
+    para_fora = np.einsum("ij,ij->i", N, centroides - centro_tubo) > 0
+
+    return {
+        "vertices": len(V),
+        "arestas": len(boia["arestas"]),
+        "faces": len(F),
+        "euler": len(V) - len(boia["arestas"]) + len(F),
+        "fechada": bool(np.all(contagem == 2)),
+        "normais_para_fora": f"{para_fora.mean():.0%}",
+    }
+
+
 if __name__ == "__main__":
-    boia = criar_boia()
-    print(f"Boia criada com sucesso!")
-    print(f" - Vértices: {len(boia['vertices'])}")
-    print(f" - Faces: {len(boia['faces'])}")
-    print(f" - Arestas: {len(boia['arestas'])}")
-    print(f" - Normais: {boia['normais_faces'].shape}")
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+    R, r = 2.0, 0.7
+    boia = criar_boia(R=R, r=r)
+    for chave, valor in verificar_boia(boia, R).items():
+        print(f"{chave:18s}: {valor}")
+
+    # Item 1e: boia no seu próprio sistema de coordenadas, com as normais
+    fig = plt.figure(figsize=(7, 7))
+    ax = fig.add_subplot(projection="3d")
+    V, F, N = boia["vertices"], boia["faces"], boia["normais_faces"]
+    ax.add_collection3d(Poly3DCollection(V[F], facecolor=boia["cor"],
+                                         edgecolor="k", linewidth=0.2, alpha=0.8))
+    C = V[F].mean(axis=1)
+    ax.quiver(*C.T, *N.T, length=0.3, color="k", linewidth=0.5)
+    for eixo, cor_eixo in zip(np.eye(3) * 3.2, "rgb"):
+        ax.quiver(0, 0, 0, *eixo, color=cor_eixo, linewidth=2)
+    lim = R + r + 0.5
+    ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim); ax.set_zlim(-lim, lim)
+    ax.set_box_aspect((1, 1, 1))
+    ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
+    ax.set_title("Boia no sistema de coordenadas do objeto")
+    plt.show()
