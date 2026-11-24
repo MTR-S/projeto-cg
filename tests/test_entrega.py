@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -73,7 +74,8 @@ class TestEntregaERelatorio(unittest.TestCase):
                 self.assertIn(solido, html_str)
 
         self.assertEqual(html_str.count("data:image/png;base64,"), 8)
-        self.assertNotIn("None", html_str)
+        html_sem_b64 = re.sub(r"data:image/png;base64,[A-Za-z0-9+/=]+", "", html_str)
+        self.assertNotIn("None", html_sem_b64)
 
     def test_relatorio_pdf_existe_e_valido(self) -> None:
         if os.environ.get("CG_EMPACOTAMENTO_SUBPROCESS") == "1":

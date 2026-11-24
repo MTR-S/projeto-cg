@@ -728,7 +728,7 @@ def montar_html_relatorio(metricas: dict, caminhos_figuras: dict[str, str]) -> s
   <div class="formula-box">
     <p><strong>Normal da face:</strong> &nbsp; <b>N</b> = (<b>v</b><sub>1</sub> &minus; <b>v</b><sub>0</sub>) &times; (<b>v</b><sub>2</sub> &minus; <b>v</b><sub>0</sub>), &nbsp;&nbsp; <b>n</b>&#770; = <b>N</b> / &Vert;<b>N</b>&Vert;</p>
     <p><strong>Fatia de queijo (<code>criar_queijo</code>):</strong> &nbsp; x<sub>2</sub> = r &middot; cos(&theta;), &nbsp; z<sub>2</sub> = r &middot; sin(&theta;), &nbsp; y &isin; {{&minus;h/2, +h/2}}</p>
-    <p><strong>Boia toroidal (<code>criar_boia</code>):</strong> &nbsp; x(u, v) = (R + r &middot; cos v) &middot; cos u, &nbsp; y(u, v) = r &middot; sin v, &nbsp; z(u, v) = (R + r &middot; cos v) &middot; sin u</p>
+    <p><strong>Boia toroidal (<code>criar_boia</code>):</strong> &nbsp; x(u, v) = (R + r &middot; cos v) &middot; cos u, &nbsp; y(u, v) = r &middot; sin v, &nbsp; z(u, v) = &minus;(R + r &middot; cos v) &middot; sin u</p>
   </div>
   <p>
     O <strong>prato</strong> (<code>criar_prato</code>) é modelado como sólido de revolução fechado em torno do eixo Y com
