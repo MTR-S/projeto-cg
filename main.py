@@ -26,6 +26,7 @@ from projecao import projetar, descartar_faces_ocultas
 from iluminacao import phong
 from rasterizacao import mapear_viewport, preencher_par_impar, desenhar_arestas_bresenham
 from visualizacao_3d import gerar_figuras_3d
+from visualizacao_pipeline import gerar_figuras_pipeline
 
 
 def render(
@@ -35,6 +36,7 @@ def render(
     resolucao: tuple[int, int] = (400, 400),
     d_proj: float = 1.8,
     salvar_caminho: str | None = None,
+    componente_phong: str = "total",
 ) -> np.ndarray:
     """
     Executa o pipeline completo de renderização:
@@ -43,6 +45,13 @@ def render(
     Retorna:
         Matriz de imagem RGB (altura, largura, 3) com valores normalizados [0.0, 1.0].
     """
+    componentes_validos = {"total", "ambiente", "difusa", "especular"}
+    if componente_phong not in componentes_validos:
+        raise ValueError(
+            f"componente_phong inválido: '{componente_phong}'. "
+            f"Valores válidos: {sorted(componentes_validos)}."
+        )
+
     largura, altura = resolucao
     buffer_imagem = np.ones((altura, largura, 3), dtype=np.float64) * 0.05  # Fundo escuro
     z_buffer = np.full((altura, largura), np.inf, dtype=np.float64)
@@ -66,7 +75,21 @@ def render(
             continue
 
         # Iluminação Phong nos vértices
-        cores_vert = phong(solido_mundo, luz_pos=luz_pos, eye_pos=eye)
+        if componente_phong == "total":
+            cores_vert = phong(solido_mundo, luz_pos=luz_pos, eye_pos=eye)
+        else:
+            _, i_amb, i_dif, i_esp = phong(
+                solido_mundo,
+                luz_pos=luz_pos,
+                eye_pos=eye,
+                retornar_componentes=True,
+            )
+            mapa_componentes = {
+                "ambiente": i_amb,
+                "difusa": i_dif,
+                "especular": i_esp,
+            }
+            cores_vert = mapa_componentes[componente_phong]
 
         # Mapeamento para Viewport / Tela
         # Limites simétricos [-1.0, 1.0] comportam todos os vértices projetados
@@ -101,7 +124,9 @@ def render(
             )
 
     if salvar_caminho:
-        os.makedirs(os.path.dirname(salvar_caminho), exist_ok=True)
+        dir_destino = os.path.dirname(salvar_caminho)
+        if dir_destino:
+            os.makedirs(dir_destino, exist_ok=True)
         plt.imsave(salvar_caminho, buffer_imagem)
         print(f"Renderização salva em: {salvar_caminho}")
 
@@ -132,8 +157,10 @@ def demonstracao_pipeline():
 
 
 def gerar_todas_figuras(diretorio_saida: str = "outputs") -> dict[str, str]:
-    """Gera todas as figuras 3D do projeto no diretório especificado."""
-    return gerar_figuras_3d(diretorio_saida=diretorio_saida)
+    """Gera todas as figuras do projeto no diretório especificado."""
+    caminhos = gerar_figuras_3d(diretorio_saida=diretorio_saida)
+    caminhos.update(gerar_figuras_pipeline(diretorio_saida=diretorio_saida))
+    return caminhos
 
 
 if __name__ == "__main__":
@@ -143,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--figuras",
         action="store_true",
-        help="Gera as figuras 3D (itens 1e, 2b, 3c–3e) na pasta de saída.",
+        help="Gera todas as figuras do pipeline (itens 1e, 2b, 3c–3e, 4a, 5 e 6) na pasta de saída.",
     )
     parser.add_argument(
         "--saida",

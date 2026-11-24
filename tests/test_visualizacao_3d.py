@@ -76,7 +76,9 @@ class TestVisualizacao3D(unittest.TestCase):
     def test_main_gerar_todas_figuras_e_cli(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir_fn, tempfile.TemporaryDirectory() as tmp_dir_cli:
             caminhos = main.gerar_todas_figuras(diretorio_saida=tmp_dir_fn)
-            self.assertEqual(set(caminhos.keys()), {"fig_1e", "fig_2b", "fig_3c", "fig_3e"})
+            self.assertTrue(
+                {"fig_1e", "fig_2b", "fig_3c", "fig_3e"}.issubset(caminhos.keys())
+            )
             for caminho in caminhos.values():
                 self._assert_png_valido(caminho)
 
