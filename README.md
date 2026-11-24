@@ -51,7 +51,8 @@ A divisão foi planejada para equilibrar volume de código, complexidade conceit
 trabalho_final/
 ├── docs/
 │   ├── plano_de_acao_trabalho_CG.md   # Planejamento estratégico e arquitetural
-│   └── Trabalho CG 2026_2.docx-2.pdf  # Especificação original do professor
+│   ├── Trabalho CG 2026_2.docx-2.pdf  # Especificação original do professor
+│   └── relatorio_trabalho_cg.pdf      # Relatório técnico final em PDF (Obs1)
 ├── solidos/
 │   ├── __init__.py                    # Exporta geradores dos 5 sólidos
 │   ├── esponja.py                     # [Matheus] Sólido: Esponja
@@ -59,12 +60,17 @@ trabalho_final/
 │   ├── prato.py                       # [Miller]  Sólido: Prato de revolução
 │   ├── boia.py                        # [Vinicius] Sólido: Boia de piscina (toro)
 │   └── rolo.py                        # [Miller]  Sólido: Rolo de massa
+├── tests/                             # Suíte de testes unitários e de entrega
 ├── transformacoes.py                  # [Matheus] Matrizes 4x4 (Escala, Rotação, Translação)
 ├── camera.py                          # [Matheus] Base (u, v, w) e matriz de visão
 ├── projecao.py                        # [Matheus] Perspectiva, backface culling e janela 2D
 ├── iluminacao.py                      # [Miller]  Modelo de iluminação de Phong (Amb+Dif+Esp)
-├── rasterizacao.py                    # [Vinicius & Miller] Bresenham, Par-Ímpar e Baricêntricas
+├── rasterizacao.py                    # [Vinicius & Miller] Bresenham, Par-Ímpar, Baricêntricas e Z-buffer
 ├── cena.py                            # [Matheus] Montagem do mundo (|coord| <= 10 e AABB check)
+├── visualizacao_3d.py                 # Geração das figuras 3D (itens 1e, 2b, 3c–3e)
+├── visualizacao_pipeline.py           # Geração das figuras do pipeline (itens 4a, 5 e 6)
+├── gerar_relatorio.py                 # Gera o relatório técnico final em PDF (docs/relatorio_trabalho_cg.pdf)
+├── empacotar_entrega.py               # Gera o pacote limpo entrega_projeto_cg.zip
 ├── main.py                            # Pipeline completo e gerador das figuras do relatório
 ├── requirements.txt                   # Dependências mínimas
 └── README.md                          # Este documento
@@ -139,11 +145,24 @@ python rasterizacao.py
 python cena.py
 ```
 
-### Execução Completa
-Para rodar a demonstração e o pipeline integrado:
+### Execução Completa, Relatório e Entrega
+Para rodar a demonstração, gerar todas as figuras, compilar o relatório em PDF, empacotar o código e executar a suíte de testes:
 
 ```bash
+# Demonstração rápida do pipeline
 python main.py
+
+# Gerar todas as figuras do relatório em outputs/
+python main.py --figuras
+
+# Gerar relatório técnico final em docs/relatorio_trabalho_cg.pdf
+python gerar_relatorio.py
+
+# Empacotar código-fonte limpo em entrega_projeto_cg.zip
+python empacotar_entrega.py
+
+# Executar todos os testes automatizados
+python -m unittest discover -s tests -v
 ```
 
 ---
@@ -178,5 +197,5 @@ python main.py
 - [x] Algoritmo Par-Ímpar com Scanline implementado manualmente
 - [x] Interpolação baricêntrica de cores no preenchimento
 - [x] Geração e comparação em 3 resoluções diferentes (ex.: 200x200, 400x400, 800x800)
-- [ ] Relatório final em PDF com Capa, Introdução, Objetivo, Desenvolvimento, Simulações, Conclusão e Referências
-- [ ] Empacotamento em `.zip` com código-fonte para entrega oficial
+- [x] Relatório final em PDF com Capa, Introdução, Objetivo, Desenvolvimento, Simulações, Conclusão e Referências (`docs/relatorio_trabalho_cg.pdf`)
+- [x] Empacotamento em `.zip` com código-fonte para entrega oficial (`entrega_projeto_cg.zip`)
