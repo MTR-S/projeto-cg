@@ -166,27 +166,18 @@ def verificar_boia(boia: dict, R: float) -> dict:
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    import os
+    import sys
 
     R, r = 2.0, 0.7
     boia = criar_boia(R=R, r=r)
+    print("Boia criada com sucesso!")
     for chave, valor in verificar_boia(boia, R).items():
-        print(f"{chave:18s}: {valor}")
+        print(f" - {chave:18s}: {valor}")
 
-    # Item 1e: boia no seu próprio sistema de coordenadas, com as normais
-    fig = plt.figure(figsize=(7, 7))
-    ax = fig.add_subplot(projection="3d")
-    V, F, N = boia["vertices"], boia["faces"], boia["normais_faces"]
-    ax.add_collection3d(Poly3DCollection(V[F], facecolor=boia["cor"],
-                                         edgecolor="k", linewidth=0.2, alpha=0.8))
-    C = V[F].mean(axis=1)
-    ax.quiver(*C.T, *N.T, length=0.3, color="k", linewidth=0.5)
-    for eixo, cor_eixo in zip(np.eye(3) * 3.2, "rgb"):
-        ax.quiver(0, 0, 0, *eixo, color=cor_eixo, linewidth=2)
-    lim = R + r + 0.5
-    ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim); ax.set_zlim(-lim, lim)
-    ax.set_box_aspect((1, 1, 1))
-    ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
-    ax.set_title("Boia no sistema de coordenadas do objeto")
-    plt.show()
+    if "--no-plot" not in sys.argv:
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_3d import exibir_solido_interativo
+
+        exibir_solido_interativo(boia)

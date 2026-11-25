@@ -87,15 +87,29 @@ def projetar(
 
 
 if __name__ == "__main__":
-    from solidos.esponja import criar_esponja
+    import sys
+    from cena import montar_cena
     from camera import camera, transformar_para_camera
 
-    esponja = criar_esponja()
-    _, _, _, M_vis = camera(eye=[5.0, 5.0, 5.0], at=[0.0, 0.0, 0.0])
-    esponja_cam = transformar_para_camera(esponja, M_vis)
+    eye = [12.0, 8.0, 14.0]
+    cena_mundo = montar_cena()
+    _, _, _, M_vis = camera(eye=eye, at=[0.0, 0.0, 0.0])
 
-    pts_2d, vis = projetar(esponja_cam, d=2.0)
-    print("Módulo de Projeção testado com sucesso!")
-    print(f"Total de faces: {len(esponja['faces'])}")
-    print(f"Faces visíveis após culling: {len(vis)}")
-    print("Shape dos pontos 2D projetados:", pts_2d.shape)
+    print("Módulo de Projeção e Backface Culling testado com sucesso!")
+    total_geral = 0
+    vis_geral = 0
+    for solido_mundo in cena_mundo:
+        solido_cam = transformar_para_camera(solido_mundo, M_vis)
+        pts_2d, vis = projetar(solido_cam, d=1.8)
+        n_tot = len(solido_cam["faces"])
+        n_vis = len(vis)
+        total_geral += n_tot
+        vis_geral += n_vis
+        print(f" - {solido_cam['nome']:8s} | Faces totais: {n_tot:3d} -> Visíveis: {n_vis:3d}")
+    print(f"Total na cena: {total_geral} faces -> {vis_geral} visíveis projetadas na janela 2D.")
+
+    if "--no-plot" not in sys.argv:
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_pipeline import exibir_projecao_3d_2d_interativa
+
+        exibir_projecao_3d_2d_interativa(eye=eye, d_proj=1.8)

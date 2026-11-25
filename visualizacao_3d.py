@@ -462,6 +462,7 @@ def gerar_figuras_3d(diretorio_saida: str = "outputs") -> dict[str, str]:
 
 def exibir_solido_interativo(solido: dict, mostrar_normais: bool = True) -> None:
     """Abre uma janela 3D interativa para inspecionar um único sólido com o mouse."""
+    matplotlib.rcParams["axes3d.mouserotationstyle"] = "arcball"
     fig = plt.figure(figsize=(7, 6))
     ax = fig.add_subplot(111, projection="3d")
     plotar_solido_3d(ax, solido, mostrar_normais=mostrar_normais, alpha=0.85)
@@ -480,6 +481,73 @@ def exibir_solido_interativo(solido: dict, mostrar_normais: bool = True) -> None
     plt.show()
 
 
+def exibir_cena_mundo_interativa(
+    cena: list[dict] | None = None,
+    mostrar_normais: bool = False,
+) -> None:
+    """Abre uma janela 3D interativa com os 5 sólidos posicionados no espaço do mundo."""
+    matplotlib.rcParams["axes3d.mouserotationstyle"] = "arcball"
+    if cena is None:
+        cena = montar_cena()
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection="3d")
+
+    handles_legenda = []
+    for solido in cena:
+        plotar_solido_3d(ax, solido, mostrar_normais=mostrar_normais, alpha=0.88)
+        cor = tuple(float(c) for c in solido["cor"])
+        handles_legenda.append(
+            Patch(
+                facecolor=cor,
+                edgecolor=_cor_borda_sutil(cor),
+                label=solido["nome"].capitalize(),
+            )
+        )
+
+    ax.set_xlim(-10.0, 10.0)
+    ax.set_ylim(-10.0, 10.0)
+    ax.set_zlim(-10.0, 10.0)
+    ax.set_box_aspect([1, 1, 1])
+    ax.set_xlabel("X_mundo")
+    ax.set_ylabel("Y_mundo")
+    ax.set_zlabel("Z_mundo")
+    ax.set_title(
+        "Item 2b — Cena Composta no Sistema de Coordenadas do Mundo ([-10, 10]³)",
+        fontsize=13,
+        fontweight="bold",
+    )
+    ax.legend(handles=handles_legenda, loc="upper left", frameon=True)
+    plt.tight_layout()
+    plt.show()
+
+
+def exibir_cena_camera_interativa(
+    eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
+    at: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 0.0, 0.0),
+    up: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 1.0, 0.0),
+) -> None:
+    """Abre uma janela 3D interativa com a cena no sistema de coordenadas da câmera (VRC)."""
+    matplotlib.rcParams["axes3d.mouserotationstyle"] = "arcball"
+    cena_mundo = montar_cena()
+
+    fig = plt.figure(figsize=(11, 8))
+    ax = fig.add_subplot(111, projection="3d")
+
+    u, v, w, _, _ = _desenhar_cena_na_camera(
+        ax, cena_mundo, eye, at, up, incluir_legenda=True
+    )
+    eye_fmt = _formatar_tupla_ponto(eye)
+    ax.set_title(
+        f"Itens 3c–3d — Cena no Sistema da Câmera (eye={eye_fmt})\n"
+        f"u={_arredondar_vetor(u, 3)} | v={_arredondar_vetor(v, 3)} | w={_arredondar_vetor(w, 3)}",
+        fontsize=11,
+        fontweight="bold",
+    )
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -490,8 +558,8 @@ if __name__ == "__main__":
         "alvo",
         nargs="?",
         default="todos",
-        choices=["esponja", "queijo", "prato", "rolo", "boia", "todos"],
-        help="Qual sólido abrir na janela 3D interativa (padrão: todos).",
+        choices=["esponja", "queijo", "prato", "rolo", "boia", "cena", "camera", "todos"],
+        help="Qual sólido, cena ou câmera abrir na janela 3D interativa (padrão: todos).",
     )
     args = parser.parse_args()
 
@@ -505,7 +573,12 @@ if __name__ == "__main__":
 
     if args.alvo in mapa_solidos:
         exibir_solido_interativo(mapa_solidos[args.alvo]())
+    elif args.alvo == "cena":
+        exibir_cena_mundo_interativa()
+    elif args.alvo == "camera":
+        exibir_cena_camera_interativa()
     else:
+        matplotlib.rcParams["axes3d.mouserotationstyle"] = "arcball"
         fig = plt.figure(figsize=(15, 9))
         fig.suptitle("Sólidos Isolados (Interativo 3D)", fontsize=14, fontweight="bold")
         for idx, fn in enumerate(mapa_solidos.values(), start=1):

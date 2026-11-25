@@ -269,7 +269,7 @@ def montar_html_relatorio(metricas: dict, caminhos_figuras: dict[str, str]) -> s
     # Linhas da tabela de sólidos (Seção 3.1)
     linhas_solidos = []
     descricoes_solidos = {
-        "esponja": "Paralelepípedo fechado (<code>criar_esponja</code>)",
+        "esponja": "Paralelepípedo subdividido em 2 camadas: espuma e fibra (<code>criar_esponja</code>)",
         "queijo": "Prisma triangular em cunha (<code>criar_queijo</code>)",
         "prato": "Sólido de revolução fechado com espessura (<code>criar_prato</code>)",
         "rolo": "Cilindro central + duas hastes e tampas em leque (<code>criar_rolo</code>)",

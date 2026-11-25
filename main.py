@@ -14,8 +14,10 @@ Executa o pipeline completo e gera todas as figuras exigidas pelo relatório:
 
 import argparse
 import os
+import sys
 import matplotlib
-matplotlib.use("Agg")
+if "matplotlib.pyplot" not in sys.modules:
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -23,7 +25,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from cena import montar_cena
 from camera import camera, transformar_para_camera, obter_origem_mundo_na_camera
 from projecao import projetar, descartar_faces_ocultas
-from iluminacao import phong
+from iluminacao import calcular_normais_vertices, phong
 from rasterizacao import mapear_viewport, preencher_par_impar, desenhar_arestas_bresenham
 from visualizacao_3d import gerar_figuras_3d
 from visualizacao_pipeline import gerar_figuras_pipeline
@@ -74,14 +76,23 @@ def render(
         if len(faces_vis) == 0:
             continue
 
-        # Iluminação Phong nos vértices
-        if componente_phong == "total":
-            cores_vert = phong(solido_mundo, luz_pos=luz_pos, eye_pos=eye)
-        else:
+        # Iluminação Phong nos vértices (suporta cor única ou cores por camada/face)
+        normais_vert = calcular_normais_vertices(solido_mundo)
+
+        def _calcular_cores_phong_cor(cor_rgb: tuple[float, float, float]) -> np.ndarray:
+            solido_cor = {**solido_mundo, "cor": cor_rgb}
+            if componente_phong == "total":
+                return phong(
+                    solido_cor,
+                    luz_pos=luz_pos,
+                    eye_pos=eye,
+                    normais_vertices=normais_vert,
+                )
             _, i_amb, i_dif, i_esp = phong(
-                solido_mundo,
+                solido_cor,
                 luz_pos=luz_pos,
                 eye_pos=eye,
+                normais_vertices=normais_vert,
                 retornar_componentes=True,
             )
             mapa_componentes = {
@@ -89,7 +100,19 @@ def render(
                 "difusa": i_dif,
                 "especular": i_esp,
             }
-            cores_vert = mapa_componentes[componente_phong]
+            return mapa_componentes[componente_phong]
+
+        cor_padrao = tuple(float(c) for c in solido_mundo["cor"])
+        cache_cores_vert: dict[tuple[float, float, float], np.ndarray] = {
+            cor_padrao: _calcular_cores_phong_cor(cor_padrao)
+        }
+        mapa_cor_face: dict[tuple[int, int, int], tuple[float, float, float]] = {}
+        if "cores_faces" in solido_mundo:
+            for f_orig, cf_orig in zip(solido_mundo["faces"], solido_mundo["cores_faces"]):
+                cor_f = tuple(float(c) for c in cf_orig)
+                mapa_cor_face[tuple(int(v) for v in f_orig)] = cor_f
+                if cor_f not in cache_cores_vert:
+                    cache_cores_vert[cor_f] = _calcular_cores_phong_cor(cor_f)
 
         # Mapeamento para Viewport / Tela
         # Limites simétricos [-1.0, 1.0] comportam todos os vértices projetados
@@ -100,8 +123,10 @@ def render(
 
         # Rasterização dos triângulos visíveis e suas arestas via Bresenham
         for face in faces_vis:
+            cor_f = mapa_cor_face.get(tuple(int(v) for v in face), cor_padrao)
+            cores_vert_face = cache_cores_vert[cor_f]
             tri_pts = pts_tela[face]
-            tri_cores = cores_vert[face]
+            tri_cores = cores_vert_face[face]
             tri_z = -solido_cam["vertices"][face, 2]
             preencher_par_impar(
                 tri_pts,

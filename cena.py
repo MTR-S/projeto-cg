@@ -98,8 +98,16 @@ def validar_cena(cena: list[dict]) -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
     cena = montar_cena()
     print("Cena montada e validada com sucesso!")
     for s in cena:
         min_pt, max_pt = obter_bounding_box(s["vertices"])
         print(f" - {s['nome']:8s} | BBox Min: {np.round(min_pt, 2)} | BBox Max: {np.round(max_pt, 2)}")
+
+    if "--no-plot" not in sys.argv:
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_3d import exibir_cena_mundo_interativa
+
+        exibir_cena_mundo_interativa(cena)

@@ -155,9 +155,19 @@ def criar_rolo(
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+
     rolo = criar_rolo()
-    print(f"Rolo criado com sucesso!")
+    print("Rolo criado com sucesso!")
     print(f" - Vértices: {len(rolo['vertices'])}")
     print(f" - Faces: {len(rolo['faces'])}")
     print(f" - Arestas: {len(rolo['arestas'])}")
     print(f" - Normais: {rolo['normais_faces'].shape}")
+
+    if "--no-plot" not in sys.argv:
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_3d import exibir_solido_interativo
+
+        exibir_solido_interativo(rolo)

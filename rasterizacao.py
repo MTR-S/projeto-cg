@@ -219,6 +219,8 @@ def mapear_viewport(
 
 
 if __name__ == "__main__":
+    import sys
+
     # Teste unitário de Bresenham
     reta = bresenham(0, 0, 5, 2)
     print("Bresenham testado. Pixels:", reta)
@@ -226,3 +228,10 @@ if __name__ == "__main__":
     # Teste de baricêntricas
     b = baricentricas((0.2, 0.2), (0, 0), (1, 0), (0, 1))
     print("Baricêntricas testadas:", b)
+
+    if "--no-plot" not in sys.argv:
+        print("Renderizando cena rasterizada...")
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_pipeline import exibir_rasterizacao_interativa
+
+        exibir_rasterizacao_interativa()

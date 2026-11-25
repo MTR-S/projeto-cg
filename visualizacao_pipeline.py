@@ -9,11 +9,13 @@ Gera as figuras exigidas para os itens 4a, 5 e 6:
 """
 
 import os
+import sys
 import time
 
 import matplotlib
 
-matplotlib.use("Agg")
+if __name__ != "__main__" and "matplotlib.pyplot" not in sys.modules:
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 from matplotlib.patches import Patch
@@ -46,20 +48,13 @@ def _selecionar_vertices_raios(solido_cam: dict, faces_vis: np.ndarray, max_raio
     return pts[[idx_min, idx_max]]
 
 
-def plotar_projecao_3d_2d(
+def _montar_figura_projecao_3d_2d(
     eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
     at: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 0.0, 0.0),
     up: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 1.0, 0.0),
     d_proj: float = 1.8,
-    diretorio_saida: str = "outputs",
-) -> str:
-    """
-    Itens 4 e 4a: Gera figura lado a lado com:
-      - Subplot esquerdo: cena 3D no espaço da câmera, plano de projeção z = -d_proj
-        com polígonos visíveis projetados e raios projetantes até (0, 0, 0).
-      - Subplot direito: janela de projeção 2D [-1, 1] x [-1, 1] com faces visíveis.
-    """
-    os.makedirs(diretorio_saida, exist_ok=True)
+):
+    """Constrói a figura Matplotlib lado a lado (3D + Janela 2D) dos Itens 4 e 4a."""
     cena_mundo = montar_cena()
     _, _, _, M_vis = camera(eye, at, up)
 
@@ -90,11 +85,21 @@ def plotar_projecao_3d_2d(
         faces = solido_cam["faces"]
         todos_pontos.append(vertices_cam)
 
+        if "cores_faces" in solido_cam:
+            cores_f_3d = [tuple(float(c) for c in cf) for cf in solido_cam["cores_faces"]]
+            mapa_cor_face = {
+                tuple(int(v) for v in f): tuple(float(c) for c in cf)
+                for f, cf in zip(faces, solido_cam["cores_faces"])
+            }
+        else:
+            cores_f_3d = cor
+            mapa_cor_face = {}
+
         # Sólido 3D no espaço da câmera (face e aresta com a mesma cor)
         colecao_3d = Poly3DCollection(
             vertices_cam[faces],
-            facecolor=cor,
-            edgecolor=cor,
+            facecolor=cores_f_3d,
+            edgecolor=cores_f_3d,
             linewidth=0.35,
             alpha=0.55,
         )
@@ -103,18 +108,22 @@ def plotar_projecao_3d_2d(
         pts_2d, faces_vis = projetar(solido_cam, d=d_proj)
         if len(faces_vis) > 0:
             pts_plano_3d = np.column_stack([pts_2d, np.full(len(pts_2d), z_plano)])
+            cores_vis = [
+                mapa_cor_face.get(tuple(int(v) for v in face), cor)
+                for face in faces_vis
+            ]
             colecao_proj = Poly3DCollection(
                 pts_plano_3d[faces_vis],
-                facecolor=cor,
-                edgecolor=cor,
+                facecolor=cores_vis,
+                edgecolor=cores_vis,
                 linewidth=0.5,
                 alpha=0.85,
             )
             ax_3d.add_collection3d(colecao_proj)
 
-            for face in faces_vis:
+            for face, cor_face in zip(faces_vis, cores_vis):
                 profundidade_media = float(np.mean(-vertices_cam[face, 2]))
-                poligonos_2d.append((profundidade_media, pts_2d[face], cor))
+                poligonos_2d.append((profundidade_media, pts_2d[face], cor_face))
 
         # Raios projetantes conectando vértices representativos até a câmera (0, 0, 0)
         for pt in _selecionar_vertices_raios(solido_cam, faces_vis, max_raios=2):
@@ -191,25 +200,49 @@ def plotar_projecao_3d_2d(
         fontweight="bold",
     )
     fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.95))
+    return fig
 
+
+def plotar_projecao_3d_2d(
+    eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
+    at: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 0.0, 0.0),
+    up: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 1.0, 0.0),
+    d_proj: float = 1.8,
+    diretorio_saida: str = "outputs",
+) -> str:
+    """
+    Itens 4 e 4a: Gera figura lado a lado com:
+      - Subplot esquerdo: cena 3D no espaço da câmera, plano de projeção z = -d_proj
+        com polígonos visíveis projetados e raios projetantes até (0, 0, 0).
+      - Subplot direito: janela de projeção 2D [-1, 1] x [-1, 1] com faces visíveis.
+    """
+    os.makedirs(diretorio_saida, exist_ok=True)
+    fig = _montar_figura_projecao_3d_2d(eye=eye, at=at, up=up, d_proj=d_proj)
     caminho = os.path.join(diretorio_saida, "fig_4a_projecao_3d_2d.png")
     fig.savefig(caminho, dpi=150)
     plt.close(fig)
     return caminho
 
 
-def plotar_iluminacao_phong(
+def exibir_projecao_3d_2d_interativa(
+    eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
+    at: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 0.0, 0.0),
+    up: tuple[float, float, float] | list[float] | np.ndarray = (0.0, 1.0, 0.0),
+    d_proj: float = 1.8,
+) -> None:
+    """Abre a janela interativa com a projeção 3D (esquerda) e a janela 2D (direita)."""
+    matplotlib.rcParams["axes3d.mouserotationstyle"] = "arcball"
+    _montar_figura_projecao_3d_2d(eye=eye, at=at, up=up, d_proj=d_proj)
+    plt.show()
+
+
+def _montar_figura_iluminacao_phong(
     eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
     resolucao: tuple[int, int] = (250, 250),
-    diretorio_saida: str = "outputs",
-) -> str:
-    """
-    Item 5: Gera grade 2x2 comparando os componentes de iluminação de Phong:
-    ambiente, difusa, especular e total.
-    """
+):
+    """Constrói a grade 2x2 comparando os componentes de iluminação de Phong (Item 5)."""
     from main import render
 
-    os.makedirs(diretorio_saida, exist_ok=True)
     modos = (
         ("ambiente", "Componente Ambiente (Ka · Ia)"),
         ("difusa", "Componente Difusa (Kd · Il · max(0, N·L))"),
@@ -230,11 +263,58 @@ def plotar_iluminacao_phong(
         fontweight="bold",
     )
     fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.95))
+    return fig
 
+
+def plotar_iluminacao_phong(
+    eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
+    resolucao: tuple[int, int] = (250, 250),
+    diretorio_saida: str = "outputs",
+) -> str:
+    """
+    Item 5: Gera grade 2x2 comparando os componentes de iluminação de Phong:
+    ambiente, difusa, especular e total.
+    """
+    os.makedirs(diretorio_saida, exist_ok=True)
+    fig = _montar_figura_iluminacao_phong(eye=eye, resolucao=resolucao)
     caminho = os.path.join(diretorio_saida, "fig_5_iluminacao_phong.png")
     fig.savefig(caminho, dpi=150)
     plt.close(fig)
     return caminho
+
+
+def exibir_iluminacao_phong_interativa(
+    eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
+    resolucao: tuple[int, int] = (200, 200),
+) -> None:
+    """Abre uma janela exibindo a decomposição 2x2 da iluminação de Phong."""
+    _montar_figura_iluminacao_phong(eye=eye, resolucao=resolucao)
+    plt.show()
+
+
+def exibir_rasterizacao_interativa(
+    eye: tuple[float, float, float] | list[float] | np.ndarray = (12.0, 8.0, 14.0),
+    resolucoes: tuple[tuple[int, int], ...] = ((150, 150), (300, 300)),
+) -> None:
+    """Abre uma janela comparando a rasterização da cena em diferentes resoluções."""
+    from main import render
+
+    fig, axes = plt.subplots(1, len(resolucoes), figsize=(5 * len(resolucoes), 5), squeeze=False)
+    for ax, (larg, alt) in zip(axes[0], resolucoes):
+        inicio = time.perf_counter()
+        img = render(eye=eye, resolucao=(larg, alt))
+        dt = time.perf_counter() - inicio
+        ax.imshow(np.clip(img, 0.0, 1.0))
+        ax.set_title(f"{larg}×{alt} ({dt:.2f} s)", fontsize=11, fontweight="bold")
+        ax.axis("off")
+
+    fig.suptitle(
+        "Item 6 — Rasterização da Cena (Bresenham + Par-Ímpar + Baricêntricas)",
+        fontsize=13,
+        fontweight="bold",
+    )
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.93))
+    plt.show()
 
 
 def plotar_rasterizacao_resolucoes(

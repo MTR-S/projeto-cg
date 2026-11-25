@@ -119,6 +119,8 @@ def phong(
 
 
 if __name__ == "__main__":
+    import sys
+
     triangulo = {
         "vertices": np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64),
         "faces": np.array([[0, 1, 2]], dtype=np.int32),
@@ -129,3 +131,10 @@ if __name__ == "__main__":
     cores_v = phong(triangulo, luz_pos=[2, 2, 5], eye_pos=[0, 0, 10])
     print("Módulo de Iluminação Phong testado com sucesso!")
     print("Cores calculadas por vértice:\n", cores_v)
+
+    if "--no-plot" not in sys.argv:
+        print("Renderizando decomposição de Phong (Ambiente, Difusa, Especular e Total)...")
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_pipeline import exibir_iluminacao_phong_interativa
+
+        exibir_iluminacao_phong_interativa()

@@ -99,14 +99,22 @@ def obter_origem_mundo_na_camera(matriz_visao: np.ndarray) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    eye = [15.0, 10.0, 15.0]
+    import sys
+
+    eye = [12.0, 8.0, 14.0]
     at = [0.0, 0.0, 0.0]
     up = [0.0, 1.0, 0.0]
 
     u, v, w, M_vis = camera(eye, at, up)
     print("Módulo de Câmera testado com sucesso!")
-    print(f"Base ortonormal da câmera:")
+    print("Base ortonormal da câmera:")
     print(f" u = {np.round(u, 4)}")
     print(f" v = {np.round(v, 4)}")
     print(f" w = {np.round(w, 4)}")
     print("Origem do mundo na câmera:", np.round(obter_origem_mundo_na_camera(M_vis), 4))
+
+    if "--no-plot" not in sys.argv:
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_3d import exibir_cena_camera_interativa
+
+        exibir_cena_camera_interativa(eye=eye, at=at, up=up)

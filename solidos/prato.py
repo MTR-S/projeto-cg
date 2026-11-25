@@ -140,9 +140,19 @@ def criar_prato(
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+
     prato = criar_prato()
-    print(f"Prato criado com sucesso!")
+    print("Prato criado com sucesso!")
     print(f" - Vértices: {len(prato['vertices'])}")
     print(f" - Faces: {len(prato['faces'])}")
     print(f" - Arestas: {len(prato['arestas'])}")
     print(f" - Normais: {prato['normais_faces'].shape}")
+
+    if "--no-plot" not in sys.argv:
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        import matplotlib.pyplot as plt  # noqa: F401
+        from visualizacao_3d import exibir_solido_interativo
+
+        exibir_solido_interativo(prato)
